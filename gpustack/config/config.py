@@ -1,5 +1,6 @@
 import os
 import secrets
+import logging
 from enum import Enum
 from typing import List, Optional, Dict
 from urllib.parse import urlparse
@@ -14,6 +15,8 @@ from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import requests
 from gpustack.utils import validators
+
+logger = logging.getLogger(__name__)
 from gpustack.schemas.workers import (
     CPUInfo,
     FileSystemInfo,
