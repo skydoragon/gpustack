@@ -140,17 +140,30 @@ class DistributedScheduler:
                 max_instances=1,
             )
             scheduler.start()
+            
+            # 通过事件触发调度（放入异步任务）
+            asyncio.create_task(self._event_listener())
         except Exception as e:
             logger.error(f"Failed to start scheduler: {e}")
         
         logger.info("Distributed scheduler started.")
+    
+    async def _event_listener(self):
+        """事件监听器
         
-        # 通过事件触发调度
-        async for event in ModelInstance.subscribe(source="scheduler"):
-            if event.type != EventType.CREATED:
-                continue
-            
-            await self._enqueue_pending_instances()
+        Event listener
+        
+        修复：将事件订阅放入异步任务，避免阻塞start方法执行
+        Fix: Move event subscription to async task to avoid blocking start method execution
+        """
+        try:
+            async for event in ModelInstance.subscribe(source="scheduler"):
+                if event.type != EventType.CREATED:
+                    continue
+                
+                await self._enqueue_pending_instances()
+        except Exception as e:
+            logger.error(f"Failed to listen for model instance events: {e}")
     
     async def _enqueue_pending_instances(self):
         """将待调度的模型实例加入队列"""
@@ -282,8 +295,6 @@ class DistributedScheduler:
                     self._queue.task_done()
                 except Exception as e:
                     logger.error(f"Failed to schedule model instance: {e}")
-            except queue.Empty:
-                continue
             except Exception as e:
                 logger.error(f"Failed to get item from schedule queue: {e}")
     
